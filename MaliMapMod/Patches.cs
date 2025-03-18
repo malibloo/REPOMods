@@ -8,6 +8,18 @@ namespace MaliMapMods
 {
     //Woe be the person who is going through this code, realizing I had to find a different way for each different part.
 
+    [HarmonyPatch(typeof(Map), "Awake")]
+    public class MapAwakePatch
+    {
+        static void Prefix()
+        {
+            Plugin.Logger.LogInfo("Reawakened map");
+            //Stuff here to reset/empty the sprite list
+            Plugin.recolorSprites.Clear();
+            Plugin.mapLight = null;
+        }
+    }
+
     //Unexplored map (from collection on Map)
     [HarmonyPatch(typeof(Map), "Start")]
     public class MapCommonPatch
@@ -33,7 +45,7 @@ namespace MaliMapMods
             //Unexplored outline
             Plugin.RegisterMaterial(Plugin.rUnexOutline, map?.RoomVolumeOutline, Plugin.configUnexOutlineColor, i + 15, "Could not change unexplored outline color!");
             //Unexplored question mark
-            Plugin.RecolorSprite(map?.ModulePrefab, Plugin.configUnexQuestionColor, i + 16, "Could not change unexplored question mark color!");
+            Plugin.RegisterSprite(Plugin.sUnexQuestion, map?.ModulePrefab, Plugin.configUnexQuestionColor, i + 16, "Could not change unexplored question mark color!");
         }
     }
 
@@ -51,40 +63,30 @@ namespace MaliMapMods
         }
     }
 
-    //Valuable color
+    //Valuable color (sprite)
     [HarmonyPatch(typeof(MapValuable), "Start")]
     public class MapValuableStartPatch
     {
         static void Prefix(MapValuable __instance)
         {
-            if (__instance != null)
-                __instance.spriteRenderer.color = Plugin.configValuableColor.Value;
-            else if (!Plugin.dirtyWarningCheck[21])
-            {
-                Plugin.Logger.LogWarning("Could not change valuable color!");
-                Plugin.dirtyWarningCheck[21] = true;
-            }
+            if (__instance == null) return;
+            Plugin.RegisterSprite(Plugin.sValuables, __instance.gameObject, Plugin.configValuableColor, 21, "Could not change valuable color!");
         }
     }
 
-    //Custom object color
-    //This method also gets color passed along, could possibly be used for many different object
-    [HarmonyPatch(typeof(MapCustom), "Start")]
+    //Custom object color (script variable, check if refreshes)
+    //This method also gets color passed along, could possibly be used for many different objects
+    [HarmonyPatch(typeof(Map), "AddCustom")]
     public class MapCustomStartPatch
     {
-        static void Prefix(MapCustom __instance)
+        static void Postfix(MapCustom mapCustom)
         {
-            if (__instance != null)
-                __instance.color = Plugin.configCustomColor.Value;
-            else if (!Plugin.dirtyWarningCheck[29])
-            {
-                Plugin.Logger.LogWarning("Could not change custom item color!");
-                Plugin.dirtyWarningCheck[29] = true;
-            }
+            if (mapCustom == null) return;
+            Plugin.RegisterSprite(Plugin.sCustom, mapCustom.mapCustomEntity.gameObject, Plugin.configCustomColor, 29, "Could not change custom item color!");
         }
     }
 
-    //Background, Scanlines, Player
+    //Background, Scanlines, Player (sprite)
     [HarmonyPatch(typeof(DirtFinderMapPlayer), "Awake")]
     public class MapPlayerAwakePatch
     {
@@ -103,7 +105,7 @@ namespace MaliMapMods
             //Player
             // Map/Active/Player/PlayerGraphic
             var playerGraphic = __instance.transform.Find("Player Graphic")?.gameObject;
-            Plugin.RecolorSprite(playerGraphic, Plugin.configPlayerColor, 23, "Could not change player color!");
+            Plugin.RegisterSprite(Plugin.sPlayer, playerGraphic, Plugin.configPlayerColor, 23, "Could not change player color!");
         }
     }
 
@@ -113,10 +115,10 @@ namespace MaliMapMods
     {
         static void Prefix(MapToolController __instance)
         {
-            var light = __instance?.transform.parent?.GetComponentInChildren<Light>();
-            if (light != null)
-                light.color = Plugin.configLightColor.Value;
-
+            if (Plugin.mapLight != null) return;
+            Plugin.mapLight = __instance?.transform.parent?.GetComponentInChildren<Light>();
+            if (Plugin.mapLight != null)
+                Plugin.mapLight.color = Plugin.configLightColor.Value;
             else if (!Plugin.dirtyWarningCheck[30])
             {
                 Plugin.Logger.LogWarning("Could not change light color!");
