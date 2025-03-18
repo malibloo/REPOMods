@@ -22,7 +22,7 @@ namespace MaliMapMods
     {
         static public ConfigEntry<Color> configLightColor; //Light
         static public ConfigEntry<Color> configPlayerColor; //Sprite
-        static public ConfigEntry<Color> configValuableColor; //Sprite
+        static public ConfigEntry<Color> configValuableColor; //Sprites
         static public ConfigEntry<Color> configCustomColor; //Sprite
         static public ConfigEntry<Color> configDoorColor;
         static public ConfigEntry<Color> configFloorColor;
@@ -34,12 +34,11 @@ namespace MaliMapMods
         static public ConfigEntry<Color> configTruckWallColor;
         static public ConfigEntry<Color> configInactiveFloorColor;
         static public ConfigEntry<Color> configInactiveWallColor;
+        static public ConfigEntry<Color> configUsedFloorColor;
+        static public ConfigEntry<Color> configUsedWallColor;
         static public ConfigEntry<Color> configScanlinesColor;
         static public ConfigEntry<Color> configBackgroundColor;
-        //MapBacktrack
-        // MapBacktrack.points spriteRenderer
-        //Player Counter
-        // ???
+        static public ConfigEntry<Color> configBacktrackColor; //Sprites
 
 
         static internal SpritesWithColor sPlayer = null;
@@ -57,6 +56,7 @@ namespace MaliMapMods
         static internal SharedMaterialWithColor rInactiveWall = null;
         static internal SharedMaterialWithColor rScanlines = null;
         static internal SharedMaterialWithColor rBackground = null;
+        static internal SpritesWithColor sBacktrack = null;
 
         static internal List<SharedMaterialWithColor> recolorMaterials = [];
         static internal List<SpritesWithColor> recolorSprites = [];
@@ -83,10 +83,14 @@ namespace MaliMapMods
             RegisterConfig(ref configTruckWallColor, Config.Bind("General.Rooms", "Spawn & Active Extraction Wall Color", new Color(0f, 0.4757f, 0.4906f), "The color of the truck spawn and active extraction point walls on the map.")); // 0f, 0.4757f, 0.4906f
             RegisterConfig(ref configInactiveFloorColor, Config.Bind("General.Rooms", "Extraction Floor Color", new Color(0.3302f, 0f, 0.1426f), "The color of inactive extraction point floors on the map.")); // 0.3302f, 0.1426f, 0f
             RegisterConfig(ref configInactiveWallColor, Config.Bind("General.Rooms", "Extraction Wall Color", new Color(0.5566f, 0f, 0.2504f), "The color of inactive extraction points walls on the map.")); // 0.5566f, 0.2504f, 0f
+            RegisterConfig(ref configUsedFloorColor, Config.Bind("General.Rooms", "Used Extraction Floor Color", new Color(0f, 0f, 0.141f), "The color of the used extraction floors on the map.")); // 0.3019f, 0f, 0.0191f
+            RegisterConfig(ref configUsedWallColor, Config.Bind("General.Rooms", "Used Extraction Wall Color", new Color(0f, 0f, 0.227f), "The color of the used extraction walls on the map.")); // 0.5849f, 0f, 0.0057f
             RegisterConfig(ref configUnexOutlineColor, Config.Bind("General.Rooms.Unexplored", "Unexplored Outline", new Color(0f, 0.0304f, 0.5377f), "The color of the outlines of the unexplored map.")); // 0f, 0.5377f, 0.0304f
             RegisterConfig(ref configUnexQuestionColor, Config.Bind("General.Rooms.Unexplored", "Unexplored Question Mark", new Color(0f, 0.0362f, 0.7358f), "The color of the question mark on the unexplored map.")); // 0f, 0.7358f, 0.0362f
             RegisterConfig(ref configScanlinesColor, Config.Bind("General.Background", "Scanlines Color", new Color(0.0406f, 0f, 1f, 0.0196f), "The color of the scanlines scrolling over the map. Transparency is used")); // 0.0406f, 1f, 0f, 0.0196f
             RegisterConfig(ref configBackgroundColor, Config.Bind("General.Background", "Background Color", new Color(0f, 0.0068f, 0.3113f), "The color the background of the map.")); // 0f 0.3113f 0.0068f
+            RegisterConfig(ref configBacktrackColor, Config.Bind("General.Misc", "Backtrack Trail Color", new Color(0f, 0.0068f, 0.3113f), "The color the trail that points to the extractor on the map.")); // 1f, 1f, 1f
+
 
             //Recolor dead heads
 

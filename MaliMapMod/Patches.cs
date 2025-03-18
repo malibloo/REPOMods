@@ -126,4 +126,14 @@ namespace MaliMapMods
             }
         }
     }
+
+    //Backtrack points
+    [HarmonyPatch(typeof(MapBacktrackPoint), "Awake")]
+    public class MapBacktrackAwakePatch
+    {
+        static void Postfix(ref MapBacktrackPoint __instance)
+        {
+            Plugin.RegisterSprite(Plugin.sBacktrack, __instance.gameObject, Plugin.configBacktrackColor, 24, "Could not change backtrack point color!");
+        }
+    }
 }
