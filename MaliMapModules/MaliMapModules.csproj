@@ -1,0 +1,106 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>12</LangVersion>
+    <Nullable>enable</Nullable>
+    <Authors>Malibloo</Authors>
+    <AssemblyName>com.malibloo.mapmodules</AssemblyName>
+    <Product>Mali's Map Modules</Product>
+    <Version>0.9.4</Version>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!-- Add Package Sources -->
+  <PropertyGroup>
+    <RestoreAdditionalProjectSources>
+      https://api.nuget.org/v3/index.json;
+      https://nuget.bepinex.dev/v3/index.json;
+      https://nuget.windows10ce.com/nuget/v3/index.json
+    </RestoreAdditionalProjectSources>
+  </PropertyGroup>
+
+  <!-- Package References -->
+  <ItemGroup>
+    <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all" IncludeAssets="build" />
+    <PackageReference Include="Linkoid.Repo.Plugin.Build" Version="*" PrivateAssets="all" />
+    
+    <PackageReference Include="BepInEx.Core" Version="5.*" ExcludeAssets="runtime" />
+    <PackageReference Include="BepInEx.PluginInfoProps" Version="2.1.0" PrivateAssets="all" />
+    <PackageReference Include="UnityEngine.Modules" Version="2022.3.62" IncludeAssets="compile" PrivateAssets="all" />
+    <PackageReference Include="R.E.P.O.GameLibs.Steam" Version="*-*" PrivateAssets="all" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- Thunderstore / r2modman metadata -->
+    <ThunderstorePackageName>MaliMapModules</ThunderstorePackageName>
+    <ThunderstoreDescription>Has a multitude of modules that enhance the map. Like being able to see valuables, enemies, and more.</ThunderstoreDescription>
+    <ThunderstoreWebsiteUrl></ThunderstoreWebsiteUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="ThunderstoreDist\" />
+  </ItemGroup>
+
+  <!-- ################ Thunderstore automatic package creation upon building ################ -->
+  <Target Name="PackageThunderstore_DebugNotice" AfterTargets="Build" Condition="'$(Configuration)' != 'Release'">
+    <Message Importance="high" Text="Skipping Thunderstore packaging because Configuration=$(Configuration). Switch to Release to generate manifest/zip." />
+  </Target>
+
+  <Target Name="PackageThunderstore" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <PropertyGroup>
+      <PkgRoot>$(ProjectDir)ThunderstoreBuild\</PkgRoot>
+      <PkgPluginsDir>$(PkgRoot)BepInEx\plugins\$(ThunderstorePackageName)\</PkgPluginsDir>
+      <OutZipDir>$(ProjectDir)ThunderstoreDist\</OutZipDir>
+      <OutZip>$(OutZipDir)$(Authors)-$(ThunderstorePackageName)-$(Version).zip</OutZip>
+
+      <BuiltDll>$(TargetDir)$(AssemblyName).dll</BuiltDll>
+      <ManifestPath>$(ProjectDir)Thunderstore\manifest.json</ManifestPath>
+      <ReadmePath>$(PkgRoot)README.md</ReadmePath>
+      <IconPath>$(PkgRoot)icon.png</IconPath>
+    </PropertyGroup>
+
+    <!-- Clean output -->
+    <RemoveDir Directories="$(PkgRoot)" />
+    <MakeDir Directories="$(PkgPluginsDir)" />
+    <MakeDir Directories="$(OutZipDir)" />
+
+    <PropertyGroup>
+      <_ManifestJson>
+{
+  "name": "$(ThunderstorePackageName)",
+  "version_number": "$(Version)",
+  "website_url": "$(ThunderstoreWebsiteUrl)",
+  "description": "$(ThunderstoreDescription)",
+  "dependencies": [
+    "BepInEx-BepInExPack-5.4.23.4"
+  ]
+}
+      </_ManifestJson>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_ManifestSingleLine Include="$(_ManifestJson)" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(ManifestPath)" Lines="@(_ManifestSingleLine)" Overwrite="true" Encoding="UTF-8" />
+
+    <!-- Ensure README/icon exist (use placeholders if you want) -->
+    <Error Condition="!Exists('$(ProjectDir)Thunderstore\README.md')" Text="README.md missing in project root." />
+    <Error Condition="!Exists('$(ProjectDir)Thunderstore\icon.png')" Text="icon.png missing in project root." />
+
+    <Copy SourceFiles="$(ProjectDir)Thunderstore\manifest.json" DestinationFiles="$(PkgRoot)manifest.json" />
+    <Copy SourceFiles="$(ProjectDir)Thunderstore\README.md" DestinationFiles="$(ReadmePath)" />
+    <Copy SourceFiles="$(ProjectDir)Thunderstore\icon.png" DestinationFiles="$(IconPath)" />
+
+    <!-- Copy the built DLL into package layout -->
+    <Copy SourceFiles="$(BuiltDll)" DestinationFiles="$(PkgPluginsDir)$(AssemblyName).dll" />
+
+    <!-- Zip (PowerShell) -->
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;if(Test-Path '$(OutZip)'){Remove-Item -Force '$(OutZip)'}; Compress-Archive -Path '$(PkgRoot)*' -DestinationPath '$(OutZip)'&quot;" />
+
+    <Message Importance="high" Text="Thunderstore package created: $(OutZip)" />
+  </Target>
+
+</Project>

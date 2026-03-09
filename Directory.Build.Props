@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <CopyFilesToPluginOutputDirectoryOnBuild>false</CopyFilesToPluginOutputDirectoryOnBuild>
+    <CopyFilesToPluginOutputDirectoryOnRun>false</CopyFilesToPluginOutputDirectoryOnRun>
+  </PropertyGroup>
+</Project>
