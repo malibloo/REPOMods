@@ -10,26 +10,22 @@ namespace MaliMapModules
         {
             private static readonly HashSet<ValuableObject> Pending = [];
             private static readonly HashSet<MapValuable> Markers = [];
+            private static readonly HashSet<ValuableObject> ModSpawned = [];
 
-            private static bool _capturing;
-            private static int _overlayChildCountBefore;
 
             internal static void Tick()
             {
                 Markers.RemoveWhere(m => m == null);
                 Pending.RemoveWhere(v => v == null);
 
+                if (!MapReady || Pending.Count == 0) return;
 
-                if (!MapReady || Map.Instance == null) return;
-                if (Pending.Count == 0) return;
-
-                // Flush, create markers locally
-                _capturing = true;
                 try
                 {
                     foreach (var v in Pending)
                     {
                         if (v == null) continue;
+                        ModSpawned.Add(v); // Mark mod spawned valuables for hiding toggle
                         Map.Instance.AddValuable(v); // Client only
                     }
                 }
@@ -39,7 +35,6 @@ namespace MaliMapModules
                 }
                 finally
                 {
-                    _capturing = false;
                     Pending.Clear();
                 }
 
@@ -61,8 +56,9 @@ namespace MaliMapModules
                 }
             }
 
+
             // Add valuables to pending as they spawn
-            [HarmonyPatch(typeof(ValuableObject), "Start")]
+            [HarmonyPatch(typeof(ValuableObject), nameof(ValuableObject.Start))]
             private static class ValuableObject_Start_Patch
             {
                 private static void Postfix(ValuableObject __instance)
@@ -76,30 +72,51 @@ namespace MaliMapModules
             [HarmonyPatch(typeof(Map), nameof(Map.AddValuable))]
             static class Map_AddValuable_Patch
             {
-                static void Prefix(Map __instance)
-                {
-                    if (!_capturing) return;
-                    _overlayChildCountBefore = __instance.OverLayerParent.transform.childCount;
-                }
-
                 static void Postfix(Map __instance, ValuableObject _valuable)
                 {
-                    if (!_capturing) return;
-
-                    var parent = __instance.OverLayerParent.transform;
-                    int after = parent.childCount;
-
-                    // Typically exactly one new child: index == _overlayChildCountBefore
-                    for (int i = _overlayChildCountBefore; i < after; i++)
+                    if (ModSpawned.Remove(_valuable))
                     {
-                        var child = parent.GetChild(i);
-                        var mv = child.GetComponent<MapValuable>();
-                        if (mv != null && mv.target == _valuable)
+                        // Mod-initiated addition
+                        var parent = __instance.OverLayerParent.transform;
+                        // Reverse search because newly added objects will be at the end of the child list
+                        for (int i = parent.childCount - 1; i >= 0; i--)
                         {
-                            Markers.Add(mv);
+                            var mv = parent.GetChild(i).GetComponent<MapValuable>();
+                            if (mv != null && mv.target == _valuable)
+                            {
+                                Markers.Add(mv);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Intercept discovery to prevent duplicate map markers and ensure proper state
+            [HarmonyPatch(typeof(ValuableObject), nameof(ValuableObject.DiscoverRPC))]
+            private static class ValuableObject_DiscoverRPC_Patch
+            {
+                static bool Prefix(ValuableObject __instance)
+                {
+                    MapValuable? existing = null;
+                    foreach (var m in Markers)
+                    {
+                        if (m != null && m.target == __instance)
+                        {
+                            existing = m;
                             break;
                         }
                     }
+
+                    if (existing != null)
+                    {
+                        existing.spriteRenderer.enabled = true; // Ensure marker is visible, regardless of toggle state
+                        Markers.Remove(existing);
+                        __instance.discovered = true;
+                        return false; // Skip original, which would call Map.Instance.AddValuable
+                    }
+
+                    return true; // No marker yet, let the original run normally
                 }
             }
         }
