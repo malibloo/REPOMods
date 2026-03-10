@@ -1,5 +1,4 @@
 ﻿using HarmonyLib;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -86,20 +85,19 @@ namespace MaliMapModules
                 // If still null, something went critically wrong
                 if (mc.mapCustomEntity == null)
                 {
-                    Logger.LogWarning($"[Enemies] Critical failure trying to add {ep.enemyName}. Discontinuing attempts.");
+                    Logger.LogWarning($"[Enemies] Critical failure trying to add {ep.enemyName} map marker. Discontinuing attempts.");
                     return true;
                 }
 
-                RegisterMarkerIfMine(mc.mapCustomEntity, ep);
+                RegisterMarkerIfMine(mc.mapCustomEntity, ep.enemyName);
                 return true;
             }
 
-            private static void RegisterMarkerIfMine(MapCustomEntity ent, EnemyParent ep)
+            private static void RegisterMarkerIfMine(MapCustomEntity ent, string name)
             {
                 if (ent == null) return;
                 Markers.Add(ent);
-                ent.gameObject.name = $"[MMM] Marker - {ep.enemyName}";
-                //Logger.LogInfo($"[Enemies] Registered: {ep.enemyName}. Markers: {Markers.Count}");
+                ent.gameObject.name = $"[MMM] Marker - {name}";
                 SetMarkerVisibility(ent);
             }
 

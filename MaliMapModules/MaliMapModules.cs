@@ -18,18 +18,27 @@ namespace MaliMapModules
 
         private float _tickTimer;
 
-        // Config
+        // ### Config ###
+        internal static ConfigEntry<float> FlushIntervalSeconds = null!;
+
+        // Players
+        internal static ConfigEntry<bool> ShowPlayers = null!;
+        internal static ConfigEntry<KeyboardShortcut> TogglePlayersKey = null!;
+        internal static ConfigEntry<bool> UsePlayerColor = null!;
+        internal static ConfigEntry<string> PlayerColorHex = null!;
+
+        // Valuables
         internal static ConfigEntry<bool> ShowValuables = null!;
         internal static ConfigEntry<KeyboardShortcut> ToggleValuablesKey = null!;
 
-
+        // Enemies
         internal static ConfigEntry<bool> ShowEnemies = null!;
         internal static ConfigEntry<KeyboardShortcut> ToggleEnemiesKey = null!;
         internal static ConfigEntry<string> EnemyColorHex = null!;
         internal static ConfigEntry<bool> UseEnemyRigidbody = null!;
 
-        internal static ConfigEntry<float> FlushIntervalSeconds = null!;
-
+        // Map Colors
+        // TODO
 
 
         private void Awake()
@@ -41,6 +50,11 @@ namespace MaliMapModules
             gameObject.hideFlags = HideFlags.HideAndDontSave;
 
             // Config
+            ShowPlayers = Config.Bind("Players", "Enabled", true, "Show player markers on the map.");
+            TogglePlayersKey = Config.Bind("Players", "ToggleKey", new KeyboardShortcut(KeyCode.Keypad4), "Toggle visibility of this mod's markers.");
+            UsePlayerColor = Config.Bind("Players", "UseColor", true, "Whether to use a player's own color, or stick to a single configurable color");
+            PlayerColorHex = Config.Bind("Players", "ColorHex", "#00FFFF", "Override player color to single color. Expects #RRGGBB).");
+
             ShowValuables = Config.Bind("Valuables", "Enabled", true, "Show all valuables on the map (client-only).");
             ToggleValuablesKey = Config.Bind("Valuables", "ToggleKey", new KeyboardShortcut(KeyCode.Keypad5), "Toggle visibility of this mod's markers.");
 
@@ -70,6 +84,12 @@ namespace MaliMapModules
 
         private void Update()
         {
+            if (TogglePlayersKey.Value.IsDown())
+            {
+                TogglePlayers();
+                Logger.LogInfo($"Player markers {(ShowPlayers.Value ? "ON" : "OFF")}");
+            }
+            
             if (ToggleValuablesKey.Value.IsDown())
             {
                 ToggleValuables();
@@ -90,6 +110,12 @@ namespace MaliMapModules
                 ValuablesModule.Tick();
                 EnemiesModule.Tick();
             }
+        }
+
+        private void TogglePlayers(bool? visible = null)
+        {
+            ShowPlayers.Value = visible ?? !ShowPlayers.Value;
+            PlayerModules.UpdateAllMarkers();
         }
 
         public void ToggleValuables(bool? visible = null)
