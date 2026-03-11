@@ -2,18 +2,16 @@
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
-using System;
 using UnityEngine;
 
 namespace MaliMapModules
 {
     [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
-    public partial class MaliMapModules : BaseUnityPlugin
+    public class MaliMapModules : BaseUnityPlugin
     {
         internal static MaliMapModules Instance { get; private set; } = null!;
-        internal new static ManualLogSource Logger => Instance._logger;
-        private ManualLogSource _logger => base.Logger;
-        private static bool MapReady => LevelGenerator.Instance.Generated;
+        internal new static ManualLogSource Logger => Instance.LoggerInstance;
+        private ManualLogSource LoggerInstance => base.Logger;
         internal Harmony? Harmony { get; set; }
 
         private float _tickTimer;
@@ -107,8 +105,9 @@ namespace MaliMapModules
             {
                 _tickTimer = 0f;
 
-                ValuablesModule.Tick();
+                PlayerModules.Tick();
                 EnemiesModule.Tick();
+                ValuablesModule.Tick();
             }
         }
 
@@ -128,26 +127,6 @@ namespace MaliMapModules
         {
             ShowEnemies.Value = visible ?? !ShowEnemies.Value;
             EnemiesModule.UpdateAllMarkers();
-        }
-
-        private static Color? ParseColor(string hex)
-        {
-            string h = hex.Trim();
-            if (!h.StartsWith("#")) return null;
-
-            try
-            {
-                byte r, g, b, a;
-                r = Convert.ToByte(h[1..3], 16);
-                g = Convert.ToByte(h[3..5], 16);
-                b = Convert.ToByte(h[5..7], 16);
-                a = (h.Length == 9) ? Convert.ToByte(h[7..9], 16) : (byte)255;
-                return new Color32(r, g, b, a);
-            }
-            catch
-            {
-                return null;
-            }
         }
     }
 }

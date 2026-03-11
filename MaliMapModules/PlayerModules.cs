@@ -1,183 +1,127 @@
 ﻿using HarmonyLib;
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
 
 namespace MaliMapModules
 {
-    partial class MaliMapModules
+    internal static class PlayerModules
     {
-        internal class PlayerModules
+        private static readonly HashSet<MapCustomEntity> Markers = [];
+        private static readonly HashSet<PlayerAvatar> Pending = [];
+
+
+        private static Sprite? _playerSpriteCached;
+        private static Color? _playerColorCached;
+
+        private static bool _runSpriteCaching = true;
+
+
+        internal static void Tick()
         {
-            private static readonly HashSet<MapCustomEntity> Markers = [];
-            private static readonly HashSet<PlayerAvatar> Pending = [];
+            if (!ModuleUtils.MapReady) return;
+            // Escape if no sprites were found
+            if (_playerSpriteCached == null && !_runSpriteCaching) return;
 
+            // Cleanup
+            Markers.RemoveWhere(m => m == null);
+            Pending.RemoveWhere(v => v == null);
 
-            private static Sprite? _playerSpriteCached;
-            private static Color? _playerColorCached;
+            CachePlayerSprite();
+            _playerColorCached ??= ModuleUtils.ParseColor(MaliMapModules.PlayerColorHex.Value);
 
-            private static bool _spriteCacheAttempted = false;
+            // Evaluate pending markers
+            Pending.RemoveWhere(p => p != null && TryCreatePlayerMarker(p));
+        }
 
+        private static bool TryCreatePlayerMarker(PlayerAvatar pa)
+        {
+            if (pa == null) return false;
 
-            internal static void Tick()
+            // Ensure we have a sprite
+            if (_playerSpriteCached == null) return false;
+
+            var go = TryGetRigidBodyGO(pa.gameObject);
+
+            var mce = ModuleUtils.TryCreateMarker(go, _playerSpriteCached, _playerColorCached ?? Color.white);
+
+            // If still null, something went critically wrong
+            if (mce == null)
             {
-                if (!MapReady) return;
-                // Escape if no sprites were found
-                if(_spriteCacheAttempted && _playerSpriteCached == null) return;
-
-                // Cleanup
-                Markers.RemoveWhere(m => m == null);
-                Pending.RemoveWhere(v => v == null);
-
-                CachePlayerSprite();
-                _playerColorCached ??= ParseColor(PlayerColorHex.Value);
-
-                // Evaluate pending markers
-                Pending.RemoveWhere(p => p != null && TryCreatePlayerMarker(p));
-            }
-
-            private static bool TryCreatePlayerMarker(PlayerAvatar pa)
-            {
-                if (pa == null) return false;
-
-                // Ensure we have a sprite
-                var sprite = _playerSpriteCached;
-                if (sprite == null) return false;
-
-                // Try player rigidbody first
-
-                GameObject go = TryGetRigidBodyGO(pa.gameObject);
-
-                var mc = go.GetComponent<MapCustom>();
-                if (mc != null) return true;
-
-                mc = go.AddComponent<MapCustom>();
-                mc.sprite = sprite;
-                mc.color = _playerColorCached ?? Color.cyan;
-                mc.enabled = false; // Disable to prevent Start() to avoid duplicates
-
-                Map.Instance.AddCustom(mc, sprite, mc.color);
-
-                // If still null, something went critically wrong
-                if (mc.mapCustomEntity == null)
-                {
-                    Logger.LogWarning($"[Enemies] Critical failure trying to add {pa.name} map marker. Discontinuing attempts.");
-                    return true;
-                }
-
-                RegisterMarkerIfMine(mc.mapCustomEntity, pa.playerName);
+                MaliMapModules.Logger.LogWarning($"[Players] Critical failure trying to add {pa.playerName} map marker. Discontinuing attempts.");
                 return true;
             }
 
-            private static GameObject TryGetRigidBodyGO(GameObject go)
+            ModuleUtils.RegisterMarkerIfMine(Markers, mce, pa.playerName, MaliMapModules.ShowPlayers.Value);
+            return true;
+        }
+
+        private static GameObject TryGetRigidBodyGO(GameObject go)
+        {
+            // TODO: Find better reference to rigidbody, check game's hierarchy
+            return go.GetComponentInChildren<Rigidbody>()?.gameObject ?? go;
+        }
+
+        internal static void UpdateAllMarkers()
+        {
+            foreach (var m in Markers)
             {
-                // TODO: Find better reference to rigidbody, check game's hierarchy
-                return go.GetComponentInChildren<Rigidbody>()?.gameObject ?? go;
+                ModuleUtils.SetMarkerVisibility(m, MaliMapModules.ShowPlayers.Value);
             }
+        }
 
-            private static void RegisterMarkerIfMine(MapCustomEntity ent, string name)
+        private static void CachePlayerSprite()
+        {
+            if (_playerSpriteCached != null && !_runSpriteCaching) return;
+            _playerSpriteCached = ModuleUtils.GetSprite("PlayerSprite.png");
+            _runSpriteCaching = false;
+        }
+
+        // Discover players are they are created, add to pending
+        [HarmonyPatch(typeof(PlayerAvatar), nameof(PlayerAvatar.Awake))]
+        private static class PlayerAvatar_Awake_Patch
+        {
+            private static void Postfix(PlayerAvatar __instance)
             {
-                if (ent == null) return;
-                Markers.Add(ent);
-                ent.gameObject.name = $"[MMM] Marker - {name}";
-                SetMarkerVisibility(ent);
+                if (__instance != null)
+                    Pending.Add(__instance);
             }
+        }
 
-            private static void SetMarkerVisibility(MapCustomEntity m)
+        // Player revive, show marker again
+        [HarmonyPatch(typeof(PlayerAvatar), nameof(PlayerAvatar.ReviveRPC))]
+        private static class PlayerAvatar_ReviveRPC_Patch
+        {
+            private static void Postfix(PlayerAvatar __instance)
             {
-                if (m == null || m.spriteRenderer == null) return;
-
-                bool alive = m.Parent != null && m.Parent.gameObject.activeInHierarchy;
-
-                m.spriteRenderer.enabled = ShowPlayers.Value && alive;
-            }
-
-            internal static void UpdateAllMarkers()
-            {
+                if (__instance == null || Markers.Count == 0) return;
+                var go = TryGetRigidBodyGO(__instance.gameObject);
+                // Update marker visibility on revive
                 foreach (var m in Markers)
                 {
-                    SetMarkerVisibility(m);
-                }
-            }
-
-            private static void CachePlayerSprite(bool forceRefresh = false)
-            {
-                if (_playerSpriteCached != null && !forceRefresh) return;
-                // Load in sprite from local file if it exists, otherwise fall back to the default sprite from the game assets.
-                var customSprite = GetSprite("PlayerSprite.png");
-                if (customSprite != null)
-                {
-                    _playerSpriteCached = customSprite;
-                    return;
-                }
-                if (Map.Instance.ValuableObject != null)
-                {
-                    var mv = Map.Instance.ValuableObject.GetComponent<MapValuable>();
-                    if (mv != null)
+                    if (m.Parent.gameObject == go)
                     {
-                        _playerSpriteCached = mv.spriteBig;
-                    }
-                }
-                _spriteCacheAttempted = true;
-            }
-
-            private static Sprite? GetSprite(string filePath)
-            {
-                var path = Path.Combine(Path.GetDirectoryName(Instance.Info.Location) ?? "", filePath);
-                if (!File.Exists(path))
-                {
-                    Logger.LogInfo($"Sprite ({filePath}) not found, using default sprite.");
-                    return null;
-                }
-                var tex = new Texture2D(2, 2);
-                ImageConversion.LoadImage(tex, File.ReadAllBytes(path));
-                return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
-            }
-
-            [HarmonyPatch(typeof(PlayerAvatar), nameof(PlayerAvatar.Awake))]
-            private static class PlayerAvatar_Awake_Patch
-            {
-                private static void Postfix(PlayerAvatar __instance)
-                {
-                    if (__instance == null) return;
-                    Pending.Add(__instance);
-                }
-            }
-
-            [HarmonyPatch(typeof(PlayerAvatar), "PlayerDeathDone")]
-            private static class PlayerAvatar_PlayerDeathDone_Patch
-            {
-                private static void Postfix(PlayerAvatar __instance)
-                {
-                    if (__instance == null || Markers.Count == 0) return;
-                    var go = TryGetRigidBodyGO(__instance.gameObject);
-                    // Update marker visibility on death
-                    foreach (var m in Markers)
-                    {
-                        if (m.Parent.gameObject == go)
-                        {
-                            m.spriteRenderer.enabled = false;
-                            break;
-                        }
+                        ModuleUtils.SetMarkerVisibility(m, MaliMapModules.ShowPlayers.Value);
+                        break;
                     }
                 }
             }
+        }
 
-            [HarmonyPatch(typeof(PlayerAvatar), nameof(PlayerAvatar.ReviveRPC))]
-            private static class PlayerAvatar_ReviveRPC_Patch
+        // Player death, hide marker
+        [HarmonyPatch(typeof(PlayerAvatar), "PlayerDeathDone")]
+        private static class PlayerAvatar_PlayerDeathDone_Patch
+        {
+            private static void Postfix(PlayerAvatar __instance)
             {
-                private static void Postfix(PlayerAvatar __instance)
+                if (__instance == null || Markers.Count == 0) return;
+                var go = TryGetRigidBodyGO(__instance.gameObject);
+                // Update marker visibility on death
+                foreach (var m in Markers)
                 {
-                    if (__instance == null || Markers.Count == 0) return;
-                    var go = TryGetRigidBodyGO(__instance.gameObject);
-                    // Update marker visibility on revive
-                    foreach (var m in Markers)
+                    if (m.Parent.gameObject == go)
                     {
-                        if (m.Parent.gameObject == go)
-                        {
-                            SetMarkerVisibility(m);
-                            break;
-                        }
+                        m.spriteRenderer.enabled = false;
+                        break;
                     }
                 }
             }
