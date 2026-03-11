@@ -36,6 +36,7 @@ namespace MaliMapModules
         private static bool TryCreatePlayerMarker(PlayerAvatar pa)
         {
             if (pa == null) return false;
+            if (pa.isLocal) return true; // Don't create marker for local player
 
             // Ensure we have a sprite
             if (_playerSpriteCached == null) return false;
