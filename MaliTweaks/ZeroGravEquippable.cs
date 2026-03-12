@@ -1,23 +1,17 @@
-﻿using BepInEx.Configuration;
-using HarmonyLib;
+﻿using HarmonyLib;
 using UnityEngine;
 
 namespace MaliTweaks
 {
-    public partial class MaliTweaks
+    internal static class ZeroGravEquippable
     {
-        // Config
-        internal static ConfigEntry<bool> NoGravGrace = null!;
-        internal static ConfigEntry<float> NoGravGraceSeconds = null!;
-
-
-        [HarmonyPatch(typeof(PhysGrabObject), "OverrideTimersTick")]
+        [HarmonyPatch(typeof(PhysGrabObject), nameof(PhysGrabObject.OverrideTimersTick))]
         private static class PhysGrabObject_OverrideTimersTick_Patch
         {
             [HarmonyPostfix]
             private static void Postfix(PhysGrabObject __instance)
             {
-                if (!NoGravGrace.Value || __instance?.rb == null) return;
+                if (!MaliTweaks.ZeroGravEquip.Value || __instance?.rb == null) return;
 
                 var state = __instance.GetComponent<NoGravState>();
                 if (state == null) return;
@@ -45,31 +39,31 @@ namespace MaliTweaks
             }
         }
 
-        [HarmonyPatch(typeof(ItemEquippable), "RPC_CompleteUnequip")]
+        [HarmonyPatch(typeof(ItemEquippable), nameof(ItemEquippable.RPC_CompleteUnequip))]
         private static class ItemEquippable_RPC_CompleteUnequip_Patch
         {
             [HarmonyPostfix]
             private static void Postfix(ItemEquippable __instance)
             {
                 var go = __instance.gameObject;
-                if (!NoGravGrace.Value || go == null) return;
+                if (!MaliTweaks.ZeroGravEquip.Value || go == null) return;
 
 
                 var state = go.GetComponent<NoGravState>();
                 state ??= go.gameObject.AddComponent<NoGravState>();
 
-                state.Remaining = NoGravGraceSeconds.Value;
+                state.Remaining = MaliTweaks.ZeroGravEquipTimer.Value;
                 state.WasActive = false;
             }
         }
 
-        [HarmonyPatch(typeof(PhysGrabObject), "FixedUpdate")]
+        [HarmonyPatch(typeof(PhysGrabObject), nameof(PhysGrabObject.FixedUpdate))]
         private static class PhysGrabObject_FixedUpdate_Patch
         {
             [HarmonyPostfix]
             private static void Postfix(PhysGrabObject __instance)
             {
-                if (__instance == null || !NoGravGrace.Value) return;
+                if (__instance == null || !MaliTweaks.ZeroGravEquip.Value) return;
                 var state = __instance.GetComponent<NoGravState>();
                 if (state == null) return;
 

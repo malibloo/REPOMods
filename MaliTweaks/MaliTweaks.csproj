@@ -7,7 +7,7 @@
     <Authors>Malibloo</Authors>
     <AssemblyName>com.malibloo.tweaks</AssemblyName>
     <Product>Mali's Tweaks</Product>
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
