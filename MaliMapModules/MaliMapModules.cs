@@ -22,7 +22,7 @@ namespace MaliMapModules
         // Players
         internal static ConfigEntry<bool> ShowPlayers = null!;
         internal static ConfigEntry<KeyboardShortcut> TogglePlayersKey = null!;
-        internal static ConfigEntry<bool> UsePlayerColor = null!;
+        internal static ConfigEntry<string> PlayerColorOverrideHex = null!;
         internal static ConfigEntry<string> PlayerColorHex = null!;
 
         // Valuables
@@ -50,7 +50,7 @@ namespace MaliMapModules
             // Config
             ShowPlayers = Config.Bind("Players", "Enabled", true, "Show player markers on the map.");
             TogglePlayersKey = Config.Bind("Players", "ToggleKey", new KeyboardShortcut(KeyCode.Keypad4), "Toggle visibility of this mod's markers.");
-            UsePlayerColor = Config.Bind("Players", "UseColor", true, "Whether to use a player's own color, or stick to a single configurable color");
+            PlayerColorOverrideHex = Config.Bind("Players", "ColorHex", "", "Override player markers to single color. Expects #RRGGBB), leave empty to use player's own colors.");
             PlayerColorHex = Config.Bind("Players", "ColorHex", "#00FFFF", "Override player color to single color. Expects #RRGGBB).");
 
             ShowValuables = Config.Bind("Valuables", "Enabled", true, "Show all valuables on the map (client-only).");

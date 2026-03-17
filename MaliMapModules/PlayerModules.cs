@@ -27,7 +27,7 @@ namespace MaliMapModules
             Pending.RemoveWhere(v => v == null);
 
             CachePlayerSprite();
-            _playerColorCached ??= ModuleUtils.ParseColor(MaliMapModules.PlayerColorHex.Value);
+            _playerColorCached ??= ModuleUtils.ParseColor(MaliMapModules.PlayerColorOverrideHex.Value);
 
             // Evaluate pending markers
             Pending.RemoveWhere(p => p != null && TryCreatePlayerMarker(p));
@@ -40,10 +40,12 @@ namespace MaliMapModules
 
             // Ensure we have a sprite
             if (_playerSpriteCached == null) return false;
+            // Get color, either from player visuals, config, or default to white
+            Color color = _playerColorCached ?? pa.playerAvatarVisuals?.color ?? Color.white;
 
             var go = TryGetRigidBodyGO(pa.gameObject);
 
-            var mce = ModuleUtils.TryCreateMarker(go, _playerSpriteCached, _playerColorCached ?? Color.white);
+            var mce = ModuleUtils.TryCreateMarker(go, _playerSpriteCached, color);
 
             // If still null, something went critically wrong
             if (mce == null)
