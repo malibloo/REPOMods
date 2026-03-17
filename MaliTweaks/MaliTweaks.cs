@@ -18,11 +18,9 @@ namespace MaliTweaks
         // ## Config ##
 
         // Enemy Valuable Protection
-        internal static ConfigEntry<bool> EnemyValProt = null!;
         internal static ConfigEntry<float> EnemyValProtTimer = null!;
 
         // Zero Grab on Equip
-        internal static ConfigEntry<bool> ZeroGravEquip = null!;
         internal static ConfigEntry<float> ZeroGravEquipTimer = null!;
 
         // Valuable Protection
@@ -37,11 +35,9 @@ namespace MaliTweaks
             gameObject.hideFlags = HideFlags.HideAndDontSave;
 
             // Config
-            EnemyValProt = Config.Bind("General", "EnemyValuableProtection", true, "Protect the enemy valuable from a death pit by resetting the invincibility timer.");
-            EnemyValProtTimer = Config.Bind("General", "EnemyValuableProtectionTimer", 5f, "Seconds to set the valuable invincibility timer to when falling in a death pit. Default is 5.0");
+            EnemyValProtTimer = Config.Bind("General", "EnemyValuableProtectionTimer", 5f, "Seconds to set the valuable invincibility timer to when falling in a death pit. Default is 5.0. Set to 0 to disable refreshing invincibility.");
 
-            ZeroGravEquip = Config.Bind("General", "ZeroGravOnEquip", true, "Have items be zero grav when pulling them out");
-            ZeroGravEquipTimer = Config.Bind("General", "ZeroGravOnEquipTimer", 0.5f, "How long the items will be zero grav for");
+            ZeroGravEquipTimer = Config.Bind("General", "ZeroGravOnEquipTimer", 0.5f, "How long the items will be zero grav for. 0 to disable.");
 
             ValuableDmgMult = Config.Bind("General", "ValuableDamageMultiplier", 0.25f, "Physics damage multiplier for valuables that are undiscovered, ungrabbed, and untouched. 0 = invincible, 1 = full damage.\nCan exceed 1 if you're crazy.");
 

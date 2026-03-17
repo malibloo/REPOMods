@@ -13,7 +13,7 @@ namespace MaliTweaks
         {
             private static void Postfix(PhysGrabObject __instance)
             {
-                if (MaliTweaks.EnemyValProt.Value)
+                if (MaliTweaks.EnemyValProtTimer.Value != 0f)
                 {
                     var valuable = __instance.GetComponent<EnemyValuable>();
                     if (valuable != null)

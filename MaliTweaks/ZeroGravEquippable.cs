@@ -11,7 +11,7 @@ namespace MaliTweaks
             [HarmonyPostfix]
             private static void Postfix(PhysGrabObject __instance)
             {
-                if (!MaliTweaks.ZeroGravEquip.Value || __instance?.rb == null) return;
+                if (MaliTweaks.ZeroGravEquipTimer.Value == 0f || __instance?.rb == null) return;
 
                 var state = __instance.GetComponent<NoGravState>();
                 if (state == null) return;
@@ -46,7 +46,7 @@ namespace MaliTweaks
             private static void Postfix(ItemEquippable __instance)
             {
                 var go = __instance.gameObject;
-                if (!MaliTweaks.ZeroGravEquip.Value || go == null) return;
+                if (MaliTweaks.ZeroGravEquipTimer.Value == 0f || go == null) return;
 
 
                 var state = go.GetComponent<NoGravState>();
@@ -63,7 +63,7 @@ namespace MaliTweaks
             [HarmonyPostfix]
             private static void Postfix(PhysGrabObject __instance)
             {
-                if (__instance == null || !MaliTweaks.ZeroGravEquip.Value) return;
+                if (__instance == null || MaliTweaks.ZeroGravEquipTimer.Value == 0f) return;
                 var state = __instance.GetComponent<NoGravState>();
                 if (state == null) return;
 
