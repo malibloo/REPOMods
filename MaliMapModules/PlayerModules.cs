@@ -129,5 +129,28 @@ namespace MaliMapModules
                 }
             }
         }
+
+        // DeathHead marker override
+        [HarmonyPatch(typeof(PlayerDeathHead), nameof(PlayerDeathHead.Update))]
+        private static class PlayerDeathHead_Update_Patch
+        {
+            private static void Postfix(PlayerDeathHead __instance)
+            {
+                if (MaliMapModules.ShowDeathHeads.Value)
+                {
+                    __instance.mapCustom.mapCustomEntity.spriteRenderer.enabled = true;
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(MapCustomEntity), nameof(MapCustom.Hide))]
+        private static class MapCustomEntity_Hide_Patch
+        {
+            private static bool Postfix(MapCustomEntity __instance)
+            {
+                if (!MaliMapModules.ShowDeathHeads.Value) return true;
+                return false;
+            }
+        }
     }
 }

@@ -23,7 +23,8 @@ namespace MaliMapModules
         internal static ConfigEntry<bool> ShowPlayers = null!;
         internal static ConfigEntry<KeyboardShortcut> TogglePlayersKey = null!;
         internal static ConfigEntry<string> PlayerColorOverrideHex = null!;
-        internal static ConfigEntry<string> PlayerColorHex = null!;
+        internal static ConfigEntry<bool> ShowDeathHeads = null!;
+        internal static ConfigEntry<KeyboardShortcut> ToggleDeathHeadsKey = null!;
 
         // Valuables
         internal static ConfigEntry<bool> ShowValuables = null!;
@@ -51,7 +52,8 @@ namespace MaliMapModules
             ShowPlayers = Config.Bind("Players", "Enabled", true, "Show player markers on the map.");
             TogglePlayersKey = Config.Bind("Players", "ToggleKey", new KeyboardShortcut(KeyCode.Keypad4), "Toggle visibility of this mod's markers.");
             PlayerColorOverrideHex = Config.Bind("Players", "ColorHex", "", "Override player markers to single color. Expects #RRGGBB), leave empty to use player's own colors.");
-            PlayerColorHex = Config.Bind("Players", "ColorHex", "#00FFFF", "Override player color to single color. Expects #RRGGBB).");
+            ShowDeathHeads = Config.Bind("Players", "ShowDeathHeads", true, "Show death head markers for players.");
+            ToggleDeathHeadsKey = Config.Bind("Players", "ToggleDeathHeadsKey", new KeyboardShortcut(KeyCode.Keypad1), "Toggle visibility of player death head markers.");
 
             ShowValuables = Config.Bind("Valuables", "Enabled", true, "Show all valuables on the map (client-only).");
             ToggleValuablesKey = Config.Bind("Valuables", "ToggleKey", new KeyboardShortcut(KeyCode.Keypad5), "Toggle visibility of this mod's markers.");
