@@ -13,22 +13,22 @@ namespace MaliMapModules
         private static Color? _enemyColorCached;
 
         private static bool _runSpriteCaching = true;
+        private static readonly string EnemySpriteFileName = "EnemySprite.png";
 
         internal static void Tick()
         {
             if (!ModuleUtils.MapReady) return;
-            // Escape if no sprites are found
-            if (_enemySpriteCached == null && !_runSpriteCaching) return;
-
-            // Cleanup
-            Markers.RemoveWhere(m => m == null);
-            Pending.RemoveWhere(v => v == null);
-
-            CacheEnemySprite();
-            _enemyColorCached ??= ModuleUtils.ParseColor(MaliMapModules.EnemyColorHex.Value);
 
             // Evaluate pending markers
-            Pending.RemoveWhere(e => e != null && TryCreateEnemyMarker(e));
+            Pending.RemoveWhere(e => e == null || TryCreateEnemyMarker(e));
+        }
+
+        internal static void Reset()
+        {
+            Markers.Clear();
+            Pending.Clear();
+            CacheEnemySprite();
+            _enemyColorCached ??= ModuleUtils.ParseColor(MaliMapModules.EnemyColorHex.Value);
         }
 
         private static bool TryCreateEnemyMarker(EnemyParent ep)
@@ -67,7 +67,7 @@ namespace MaliMapModules
         private static void CacheEnemySprite()
         {
             if (_enemySpriteCached != null && !_runSpriteCaching) return;
-            _enemySpriteCached = ModuleUtils.GetSprite("EnemySprite.png");
+            _enemySpriteCached = ModuleUtils.GetSprite(EnemySpriteFileName);
             _runSpriteCaching = false;
         }
 

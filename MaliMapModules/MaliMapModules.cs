@@ -23,8 +23,11 @@ namespace MaliMapModules
         internal static ConfigEntry<bool> ShowPlayers = null!;
         internal static ConfigEntry<KeyboardShortcut> TogglePlayersKey = null!;
         internal static ConfigEntry<string> PlayerColorOverrideHex = null!;
+
+        // Player Death Heads
         internal static ConfigEntry<bool> ShowDeathHeads = null!;
         internal static ConfigEntry<KeyboardShortcut> ToggleDeathHeadsKey = null!;
+        internal static ConfigEntry<string> DeathHeadColorOverrideHex = null!;
 
         // Valuables
         internal static ConfigEntry<bool> ShowValuables = null!;
@@ -51,9 +54,11 @@ namespace MaliMapModules
             // Config
             ShowPlayers = Config.Bind("Players", "Enabled", true, "Show player markers on the map.");
             TogglePlayersKey = Config.Bind("Players", "ToggleKey", new KeyboardShortcut(KeyCode.Keypad4), "Toggle visibility of this mod's markers.");
-            PlayerColorOverrideHex = Config.Bind("Players", "ColorHex", "", "Override player markers to single color. Expects #RRGGBB), leave empty to use player's own colors.");
+            PlayerColorOverrideHex = Config.Bind("Players", "ColorHex", "", "Override player markers to single color. Expects #RRGGBB. Leave empty to use player's own colors.");
+
             ShowDeathHeads = Config.Bind("Players", "ShowDeathHeads", true, "Show death head markers for players.");
             ToggleDeathHeadsKey = Config.Bind("Players", "ToggleDeathHeadsKey", new KeyboardShortcut(KeyCode.Keypad1), "Toggle visibility of player death head markers.");
+            DeathHeadColorOverrideHex = Config.Bind("Players", "DeathHeadColorHex", "", "Override death head markers to single color. Expects #RRGGBB. Leave empty to use player's own colors.");
 
             ShowValuables = Config.Bind("Valuables", "Enabled", true, "Show all valuables on the map (client-only).");
             ToggleValuablesKey = Config.Bind("Valuables", "ToggleKey", new KeyboardShortcut(KeyCode.Keypad5), "Toggle visibility of this mod's markers.");
@@ -89,7 +94,13 @@ namespace MaliMapModules
                 TogglePlayers();
                 Logger.LogInfo($"Player markers {(ShowPlayers.Value ? "ON" : "OFF")}");
             }
-            
+
+            if (ToggleDeathHeadsKey.Value.IsDown())
+            {
+                ToggleDeathHeads();
+                Logger.LogInfo($"Player death head markers {(ShowDeathHeads.Value ? "ON" : "OFF")}");
+            }
+
             if (ToggleValuablesKey.Value.IsDown())
             {
                 ToggleValuables();
@@ -119,6 +130,12 @@ namespace MaliMapModules
             PlayerModules.UpdateAllMarkers();
         }
 
+        private void ToggleDeathHeads(bool? visible = null)
+        {
+            ShowDeathHeads.Value = visible ?? !ShowDeathHeads.Value;
+            PlayerDeathHeadModules.UpdateAllMarkers();
+        }
+
         public void ToggleValuables(bool? visible = null)
         {
             ShowValuables.Value = visible ?? !ShowValuables.Value;
@@ -129,6 +146,18 @@ namespace MaliMapModules
         {
             ShowEnemies.Value = visible ?? !ShowEnemies.Value;
             EnemiesModule.UpdateAllMarkers();
+        }
+        [HarmonyPatch(typeof(LevelGenerator), nameof(LevelGenerator.Start))]
+        private static class LevelGenerator_Start_Patch
+        {
+            private static void Prefix(LevelGenerator __instance)
+            {
+                // Clear all markers on new map load to prevent NREs
+                PlayerModules.Reset();
+                PlayerDeathHeadModules.Reset();
+                ValuablesModule.Reset();
+                EnemiesModule.Reset();
+            }
         }
     }
 }

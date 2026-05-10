@@ -9,28 +9,26 @@ namespace MaliMapModules
         private static readonly HashSet<MapCustomEntity> Markers = [];
         private static readonly HashSet<PlayerAvatar> Pending = [];
 
-
         private static Sprite? _playerSpriteCached;
-        private static Color? _playerColorCached;
+        private static Color? _playerColorConfig;
 
         private static bool _runSpriteCaching = true;
-
+        private static readonly string PlayerSpriteFileName = "PlayerSprite.png";
 
         internal static void Tick()
         {
             if (!ModuleUtils.MapReady) return;
-            // Escape if no sprites were found
-            if (_playerSpriteCached == null && !_runSpriteCaching) return;
-
-            // Cleanup
-            Markers.RemoveWhere(m => m == null);
-            Pending.RemoveWhere(v => v == null);
-
-            CachePlayerSprite();
-            _playerColorCached ??= ModuleUtils.ParseColor(MaliMapModules.PlayerColorOverrideHex.Value);
 
             // Evaluate pending markers
-            Pending.RemoveWhere(p => p != null && TryCreatePlayerMarker(p));
+            Pending.RemoveWhere(p => p == null || TryCreatePlayerMarker(p));
+        }
+
+        internal static void Reset()
+        {
+            Markers.Clear();
+            Pending.Clear();
+            CachePlayerSprite();
+            _playerColorConfig ??= ModuleUtils.ParseColor(MaliMapModules.PlayerColorOverrideHex.Value);
         }
 
         private static bool TryCreatePlayerMarker(PlayerAvatar pa)
@@ -41,7 +39,14 @@ namespace MaliMapModules
             // Ensure we have a sprite
             if (_playerSpriteCached == null) return false;
             // Get color, either from player visuals, config, or default to white
-            Color color = _playerColorCached ?? pa.playerAvatarVisuals?.color ?? Color.white;
+            // First try index color (5 is top of head, 6 is bottom of head)
+            Color color;
+            if (_playerColorConfig != null)
+                color = _playerColorConfig.Value;
+            else if (pa.playerCosmetics?.colorsEquipped != null && pa.playerCosmetics.colorsEquipped.Length > 5)
+                color = MetaManager.instance.colors[pa.playerCosmetics.colorsEquipped[5]].color;
+            else
+                color = Color.white;
 
             var go = TryGetRigidBodyGO(pa.gameObject);
 
@@ -75,7 +80,7 @@ namespace MaliMapModules
         private static void CachePlayerSprite()
         {
             if (_playerSpriteCached != null && !_runSpriteCaching) return;
-            _playerSpriteCached = ModuleUtils.GetSprite("PlayerSprite.png");
+            _playerSpriteCached = ModuleUtils.GetSprite(PlayerSpriteFileName);
             _runSpriteCaching = false;
         }
 
@@ -127,29 +132,6 @@ namespace MaliMapModules
                         break;
                     }
                 }
-            }
-        }
-
-        // DeathHead marker override
-        [HarmonyPatch(typeof(PlayerDeathHead), nameof(PlayerDeathHead.Update))]
-        private static class PlayerDeathHead_Update_Patch
-        {
-            private static void Postfix(PlayerDeathHead __instance)
-            {
-                if (MaliMapModules.ShowDeathHeads.Value)
-                {
-                    __instance.mapCustom.mapCustomEntity.spriteRenderer.enabled = true;
-                }
-            }
-        }
-
-        [HarmonyPatch(typeof(MapCustomEntity), nameof(MapCustom.Hide))]
-        private static class MapCustomEntity_Hide_Patch
-        {
-            private static bool Postfix(MapCustomEntity __instance)
-            {
-                if (!MaliMapModules.ShowDeathHeads.Value) return true;
-                return false;
             }
         }
     }

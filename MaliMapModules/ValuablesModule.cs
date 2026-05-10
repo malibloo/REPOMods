@@ -5,8 +5,8 @@ namespace MaliMapModules
 {
     internal static class ValuablesModule
     {
-        private static readonly HashSet<ValuableObject> Pending = [];
         private static readonly HashSet<MapValuable> Markers = [];
+        private static readonly HashSet<ValuableObject> Pending = [];
         private static readonly HashSet<ValuableObject> ModSpawned = [];
 
 
@@ -28,6 +28,13 @@ namespace MaliMapModules
             Pending.Clear();
 
             UpdateAllMarkers();
+        }
+
+        internal static void Reset()
+        {
+            Markers.Clear();
+            Pending.Clear();
+            ModSpawned.Clear();
         }
 
         internal static void SetMarkerVisibility(MapValuable m)
